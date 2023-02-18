@@ -3,8 +3,10 @@
 
 #include "byte_stream.hh"
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
+#include <map>
 
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
@@ -12,6 +14,11 @@ class StreamReassembler {
   private:
     // Your code here -- add private members as necessary.
 
+    bool _end_flag;
+    size_t _eof_index;
+    size_t _excepted_index;
+    std::map<size_t, std::string> mp; 
+    void merge_str(const std::string &data, const size_t index); 
     ByteStream _output;  //!< The reassembled in-order byte stream
     size_t _capacity;    //!< The maximum number of bytes
 
