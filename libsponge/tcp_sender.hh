@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <functional>
 #include <queue>
+#include <map>
 
 //! \brief The "sender" part of a TCP implementation.
 
@@ -50,7 +51,7 @@ class TCPSender {
         //! retransmission timer for the connection
         unsigned int _initial_retransmission_timeout;
       public:
-        Timer(uint64_t _RTO, uint64_t _count) : RTO(_RTO), count(_count), _initial_retransmission_timeout(_RTO) {}
+        Timer(uint64_t _RTO, uint64_t _count) : RTO(-1), count(_count), _initial_retransmission_timeout(_RTO) {}
         void SetRtoDouble();
         void SetRtoDefult();
         void CountIncrease(const size_t);

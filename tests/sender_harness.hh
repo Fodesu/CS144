@@ -9,6 +9,7 @@
 #include "wrapping_integers.hh"
 
 #include <algorithm>
+#include <cstdio>
 #include <deque>
 #include <exception>
 #include <iostream>

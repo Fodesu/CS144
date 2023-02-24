@@ -1,8 +1,10 @@
 #include "tcp_sender.hh"
 
+#include "byte_stream.hh"
 #include "tcp_config.hh"
 #include "wrapping_integers.hh"
 
+#include <cstdio>
 #include <random>
 
 // Dummy implementation of a TCP sender
@@ -33,27 +35,26 @@ TCPSender::TCPSender(const size_t capacity, const uint16_t retx_timeout, const s
 uint64_t TCPSender::bytes_in_flight() const { return _bytes_in_flight; }
 
 void TCPSender::fill_window() {
-    size_t curr_windows_size = _receiveWindowsSize ? _receiveWindowsSize : 0;
+    size_t curr_windows_size = _receiveWindowsSize ? _receiveWindowsSize : 1;
 
-    while(curr_windows_size >= _bytes_in_flight) {
+    while(curr_windows_size > _bytes_in_flight) {
         TCPSegment segment;
         if(!_has_syn) {
             segment.header().syn = true;
             _has_syn = true;
-            segment.header().seqno = next_seqno();
-        } else {
-            segment.header().seqno = next_seqno();
-            uint64_t data_size = std::min(TCPConfig::MAX_PAYLOAD_SIZE,
-                curr_windows_size -  static_cast<size_t>(_bytes_in_flight)) - segment.header().syn;
-            string payload = _stream.read(data_size);
-
-            segment.payload() = Buffer(std::move(payload));
         }
+        segment.header().seqno = next_seqno();
+        uint64_t data_size = std::min(TCPConfig::MAX_PAYLOAD_SIZE,
+            curr_windows_size -  _bytes_in_flight - segment.header().syn);
 
-        if(!_has_fin && _stream.eof() && _receiveWindowsSize > segment.length_in_sequence_space()) {
+        string payload = _stream.read(data_size);
+
+        if(!_has_fin && _stream.eof() && curr_windows_size > (_bytes_in_flight + payload.size())) {
             _has_fin = true;
             segment.header().fin = true;
         }
+
+        segment.payload() = Buffer(std::move(payload));
 
         if(segment.length_in_sequence_space() == 0) 
             break;
@@ -77,10 +78,10 @@ void TCPSender::fill_window() {
 
 //! \param ackno The remote receiver's ackno (acknowledgment number)
 //! \param window_size The remote receiver's advertised window size
-void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_size) { 
+void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_size) {
     uint64_t abs_ackno = unwrap(ackno, _isn, _next_seqno);
     
-    if(abs_ackno < _mininal_need_ackno || abs_ackno > _next_seqno) {
+    if(abs_ackno > _next_seqno) {
         return;
     }
 
@@ -92,24 +93,20 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
             _bytes_in_flight -= front.length_in_sequence_space();
             _outstandingQueue.pop(); 
             _Timer.SetRtoDefult();
-            _consecutive_retransmissions = 0;
-            continue;
+            _Timer.CountZero();
+            
         }
         else {
-            _mininal_need_ackno = unwrap(front.header().ackno, _isn, _next_seqno) + front.length_in_sequence_space();
             break;
         }
     }
+    _consecutive_retransmissions = 0;
+    _receiveWindowsSize = window_size;
     fill_window();
 }
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
 void TCPSender::tick(const size_t ms_since_last_tick) { 
-    if(_outstandingQueue.empty()) {
-        _Timer.SetRtoDefult();
-        _Timer.CountZero();
-        return;
-    }
     _Timer.CountIncrease(ms_since_last_tick);
     if(!_outstandingQueue.empty() && _Timer.CountOver()) {
         if(_receiveWindowsSize > 0) {
@@ -133,7 +130,7 @@ void TCPSender::Timer::SetRtoDefult() { RTO = _initial_retransmission_timeout;}
 
 void TCPSender::Timer::SetRtoDouble() { RTO *= 2;}
 
-bool TCPSender::Timer::CountOver() const {return count > RTO; }
+bool TCPSender::Timer::CountOver() const {return count >= RTO; }
 
 void TCPSender::Timer::CountIncrease(const size_t t) { count += t;}
 

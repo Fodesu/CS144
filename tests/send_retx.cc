@@ -43,7 +43,7 @@ int main() {
             test.execute(ExpectState{TCPSenderStateSummary::SYN_ACKED});
             test.execute(ExpectBytesInFlight{0});
         }
-
+            
         {
             TCPConfig cfg;
             WrappingInt32 isn(rd());

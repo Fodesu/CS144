@@ -2,6 +2,7 @@
 #include "wrapping_integers.hh"
 
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
