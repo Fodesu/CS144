@@ -26,8 +26,7 @@ TCPSender::TCPSender(const size_t capacity, const uint16_t retx_timeout, const s
     , _has_syn(false)
     , _has_fin(false)
     , _receiveWindowsSize(1) //! see lab3 document !!!
-    , _outstandingQueue()
-    , _mininal_need_ackno(0)
+    , _outstandingMap()
     , _Timer(retx_timeout, 0)
     , _bytes_in_flight(0)
     , _consecutive_retransmissions((0)) {}
@@ -49,6 +48,8 @@ void TCPSender::fill_window() {
 
         string payload = _stream.read(data_size);
 
+
+
         if(!_has_fin && _stream.eof() && curr_windows_size > (_bytes_in_flight + payload.size())) {
             _has_fin = true;
             segment.header().fin = true;
@@ -59,7 +60,7 @@ void TCPSender::fill_window() {
         if(segment.length_in_sequence_space() == 0) 
             break;
 
-        if(_outstandingQueue.empty()) {
+        if(_outstandingMap.empty()) {
             _Timer.SetRtoDefult();
             _Timer.CountZero();
         }
@@ -67,7 +68,7 @@ void TCPSender::fill_window() {
         _segments_out.push(segment);
 
         _bytes_in_flight += segment.length_in_sequence_space();
-        _segments_out.push(segment);
+        _outstandingMap.insert({_next_seqno, segment});
 
         _next_seqno += segment.length_in_sequence_space();
 
@@ -85,13 +86,11 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
         return;
     }
 
-    _receiveWindowsSize = window_size;
-
-    while(!_outstandingQueue.empty()) {
-        TCPSegment front = _outstandingQueue.front();
-        if(abs_ackno >= unwrap(front.header().ackno, _isn, _next_seqno) + front.length_in_sequence_space()) {
+    for(auto iter = _outstandingMap.begin(); iter!= _outstandingMap.end(); ) {
+        TCPSegment front = iter->second;
+        if(abs_ackno >= iter->first + front.length_in_sequence_space()) {
             _bytes_in_flight -= front.length_in_sequence_space();
-            _outstandingQueue.pop(); 
+            iter = _outstandingMap.erase(iter);
             _Timer.SetRtoDefult();
             _Timer.CountZero();
             
@@ -108,11 +107,13 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
 void TCPSender::tick(const size_t ms_since_last_tick) { 
     _Timer.CountIncrease(ms_since_last_tick);
-    if(!_outstandingQueue.empty() && _Timer.CountOver()) {
-        if(_receiveWindowsSize > 0) {
+
+    auto iter = _outstandingMap.begin();
+    if (iter != _outstandingMap.end() && _Timer.CountOver()) {
+        if (_receiveWindowsSize > 0)
             _Timer.SetRtoDouble();
-        }
-        _segments_out.push(_outstandingQueue.front());
+        _Timer.CountZero();
+        _segments_out.push(iter->second);
         ++_consecutive_retransmissions;
     }
 }

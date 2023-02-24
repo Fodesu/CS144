@@ -39,9 +39,7 @@ class TCPSender {
 
     uint16_t _receiveWindowsSize;
 
-    std::queue<TCPSegment> _outstandingQueue;
-    
-    uint64_t _mininal_need_ackno;
+    std::map<int, TCPSegment> _outstandingMap;
 
     //! 时钟类
     class Timer{
