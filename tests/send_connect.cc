@@ -25,7 +25,7 @@ int main() {
             test.execute(ExpectSegment{}.with_no_flags().with_syn(true).with_payload_size(0).with_seqno(isn));
             test.execute(ExpectBytesInFlight{1});
         }
-
+        std::cout << "END OF 1 AERA" << '\n';
         {
             TCPConfig cfg;
             WrappingInt32 isn(rd());
@@ -40,7 +40,7 @@ int main() {
             test.execute(ExpectNoSegment{});
             test.execute(ExpectBytesInFlight{0});
         }
-
+        std::cout << "END OF 2 AERA" << '\n';
         {
             TCPConfig cfg;
             WrappingInt32 isn(rd());
@@ -55,7 +55,7 @@ int main() {
             test.execute(ExpectNoSegment{});
             test.execute(ExpectBytesInFlight{1});
         }
-
+        std::cout << "END OF 3 AERA" << '\n';
         {
             TCPConfig cfg;
             WrappingInt32 isn(rd());
@@ -80,7 +80,7 @@ int main() {
             test.execute(ExpectBytesInFlight{0});
             test.execute(ExpectSeqno{WrappingInt32{isn + 9}});
         }
-
+        std::cout << "END OF 4 AERA" << '\n';
     } catch (const exception &e) {
         cerr << e.what() << endl;
         return 1;

@@ -96,10 +96,10 @@ void InternetChecksum::add(std::string_view data) {
         _parity = !_parity;
     }
 }
-
+//！ 校验和
 uint16_t InternetChecksum::value() const {
     uint32_t ret = _sum;
-
+    //！ 进位
     while (ret > 0xffff) {
         ret = (ret >> 16) + (ret & 0xffff);
     }
