@@ -12,7 +12,7 @@
             "name": "(gdb) 启动",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/tests/send_extra",
+            "program": "${workspaceFolder}/build/tests/fsm_ack_rst",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
@@ -38,7 +38,7 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug",
-            "program": "${workspaceFolder}/build/tests/send_extra",
+            "program": "${workspaceFolder}/build/tests/fsm_ack_rst_relaxed",
             "args": [],
             "cwd": "${workspaceFolder}"
         }

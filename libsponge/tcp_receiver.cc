@@ -23,8 +23,8 @@ void TCPReceiver::segment_received(const TCPSegment &seg) {
 
     uint64_t abs_ackno = _reassembler.stream_out().bytes_written() + 1;
     uint64_t curr_abs_seqno = unwrap(header.seqno, _isn, abs_ackno);
-
     uint64_t  stream_index = curr_abs_seqno -1 + (header.syn);
+    // if(stream_index == 0 && !header.syn) return;
     _reassembler.push_substring(seg.payload().copy(), stream_index, header.fin);
 
 }
