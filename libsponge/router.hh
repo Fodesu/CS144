@@ -1,6 +1,7 @@
 #ifndef SPONGE_LIBSPONGE_ROUTER_HH
 #define SPONGE_LIBSPONGE_ROUTER_HH
 
+#include "ipv4_datagram.hh"
 #include "network_interface.hh"
 
 #include <optional>
@@ -14,7 +15,7 @@
 class AsyncNetworkInterface : public NetworkInterface {
     std::queue<InternetDatagram> _datagrams_out{};
 
-  public:
+public:
     using NetworkInterface::NetworkInterface;
 
     //! Construct from a NetworkInterface
@@ -48,7 +49,13 @@ class Router {
     //! as specified by the route with the longest prefix_length that matches the
     //! datagram's destination address.
     void route_one_datagram(InternetDatagram &dgram);
-
+    struct RouteTable{
+        const uint32_t route_prefix;
+        const uint8_t prefix_length;
+        const std::optional<Address> next_hop;
+        const size_t interface_idx;
+    };
+    std::vector<RouteTable> _routeTable{};
   public:
     //! Add an interface to the router
     //! \param[in] interface an already-constructed network interface
